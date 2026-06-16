@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+* {
+  @apply box-border;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  @apply m-0 min-h-screen bg-white text-slate-950 font-sans;
+}
+
+::selection {
+  @apply bg-red-200 text-red-900;
+}
+
