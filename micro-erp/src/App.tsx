@@ -1,24 +1,29 @@
 import { type ReactNode } from 'react';
-import { LayoutDashboard, Package, Truck, Layers, Users, Shield, Settings2 } from 'lucide-react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { LayoutDashboard, Package, Truck, Layers, Users, Shield, Settings2, LogOut } from 'lucide-react';
+import { NavLink, useLocation, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import Login from './pages/Login';
-import { Routes, Route } from 'react-router-dom';
 import Quarantine from './pages/crm/Quarantine';
 import PickList from './pages/wms/PickList';
 import Slots from './pages/ramp/Slots';
 import Reconciliation from './pages/fleet/Reconciliation';
+import Opportunities from './pages/sales/Opportunities';
+import Batches from './pages/production/Batches';
+import Incidents from './pages/logistics/Incidents';
 import RequireAuth from './components/RequireAuth';
 import { CRM } from './modules/crm';
 import { Planning } from './modules/planning';
 import { Warehouse } from './modules/warehouse';
 import { Ramp } from './modules/ramp';
 import { Fleet } from './modules/fleet';
+import { Sales } from './modules/sales';
+import { Production } from './modules/production';
+import { Logistics } from './modules/logistics';
 import { Admin } from './modules/admin';
 import { Settings } from './modules/settings';
 import { Dashboard } from './modules/dashboard';
 
-type ModuleType = 'dashboard' | 'crm' | 'planning' | 'warehouse' | 'ramp' | 'fleet' | 'admin' | 'settings';
+type ModuleType = 'dashboard' | 'crm' | 'planning' | 'warehouse' | 'ramp' | 'fleet' | 'sales' | 'production' | 'logistics' | 'admin' | 'settings';
 
 const menuItems = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -27,6 +32,9 @@ const menuItems = [
   { id: 'warehouse', label: 'WMS Depozit', icon: Truck },
   { id: 'ramp', label: 'Rampă & Sloturi', icon: Truck },
   { id: 'fleet', label: 'Flotă & Șoferi', icon: Users },
+  { id: 'sales', label: 'Sales', icon: Package },
+  { id: 'production', label: 'Production', icon: Layers },
+  { id: 'logistics', label: 'Logistics', icon: Truck },
   { id: 'admin', label: 'Administrare', icon: Shield },
   { id: 'settings', label: 'Setări', icon: Settings2 },
 ];
@@ -38,6 +46,9 @@ const moduleScreens: Record<ModuleType, ReactNode> = {
   warehouse: <Warehouse />,
   ramp: <Ramp />,
   fleet: <Fleet />,
+  sales: <Sales />,
+  production: <Production />,
+  logistics: <Logistics />,
   admin: <Admin />,
   settings: <Settings />,
 };
@@ -78,6 +89,21 @@ const moduleContent: Record<ModuleType, { title: string; description: string; ac
       'Control live al rutelor, încasărilor și reconciliere pentru șoferi în teren.',
     accent: 'text-red-600',
   },
+  sales: {
+    title: 'Sales & Ofertare',
+    description: 'Pipeline-ul de vânzări, comenzi active și facturare pentru canale B2B/B2C.',
+    accent: 'text-red-600',
+  },
+  production: {
+    title: 'Production Tracking',
+    description: 'Monitorizare loturi, etape finale și înfoliere pentru comenzi în producție.',
+    accent: 'text-red-600',
+  },
+  logistics: {
+    title: 'Logistics & Transport',
+    description: 'Planificare rute, foi de parcurs și control camioane pentru livrări eficiente.',
+    accent: 'text-red-600',
+  },
   admin: {
     title: 'Administrare Centrală',
     description: 'Controlul utilizatorilor, auditului și securității pentru întregul ERP.',
@@ -91,7 +117,7 @@ const moduleContent: Record<ModuleType, { title: string; description: string; ac
 };
 
 export default function MicroERP() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   if (!user) return <Login />;
   const location = useLocation();
   const path = location.pathname.replace(/^\//, '') || 'dashboard';
@@ -148,8 +174,11 @@ export default function MicroERP() {
             <p className="mt-3 max-w-2xl text-slate-600">{current.description}</p>
           </div>
 
-          <div className="inline-flex items-center gap-2 rounded-full border border-red-100 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700">
+          <div className="inline-flex items-center gap-3 rounded-full border border-red-100 bg-red-50 px-4 py-2 text-sm font-semibold text-red-700">
             <span className="h-2 w-2 rounded-full bg-red-600" /> Cont verificat
+            <button onClick={logout} className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100">
+              <LogOut className="h-4 w-4" /> Logout
+            </button>
           </div>
         </header>
 
@@ -165,17 +194,17 @@ export default function MicroERP() {
           <div className="mt-8 grid gap-4 lg:grid-cols-3">
             <div className="rounded-3xl bg-white p-6 border border-red-100 shadow-sm">
               <p className="text-xs uppercase tracking-[0.24em] text-slate-400">Operațional</p>
-              <p className="mt-3 text-3xl font-semibold text-slate-950">{activeModule === 'crm' ? 'Carantină live' : activeModule === 'planning' ? 'Plan producție' : activeModule === 'warehouse' ? 'Pickare' : activeModule === 'ramp' ? 'Sloturi' : 'Rute'}</p>
+              <p className="mt-3 text-3xl font-semibold text-slate-950">{activeModule === 'crm' ? 'Carantină live' : activeModule === 'planning' ? 'Plan producție' : activeModule === 'warehouse' ? 'Pickare' : activeModule === 'ramp' ? 'Sloturi' : activeModule === 'fleet' ? 'Flotă' : activeModule === 'sales' ? 'Vânzări' : activeModule === 'production' ? 'Producție' : activeModule === 'logistics' ? 'Logistică' : 'Dashboard'}</p>
               <p className="mt-2 text-sm text-slate-600">Starea curentă a operațiunilor pentru acest modul.</p>
             </div>
             <div className="rounded-3xl bg-white p-6 border border-red-100 shadow-sm">
               <p className="text-xs uppercase tracking-[0.24em] text-slate-400">Informațional</p>
-              <p className="mt-3 text-3xl font-semibold text-slate-950">{activeModule === 'crm' ? '27 comenzi' : activeModule === 'planning' ? '8 loturi' : activeModule === 'warehouse' ? '84%' : activeModule === 'ramp' ? '22 sloturi' : '12 rute'}</p>
+              <p className="mt-3 text-3xl font-semibold text-slate-950">{activeModule === 'crm' ? '27 comenzi' : activeModule === 'planning' ? '8 loturi' : activeModule === 'warehouse' ? '84%' : activeModule === 'ramp' ? '22 sloturi' : activeModule === 'fleet' ? '12 rute' : activeModule === 'sales' ? '24 oportunități' : activeModule === 'production' ? '18 loturi' : activeModule === 'logistics' ? '32 rute' : 'Dashboard'}</p>
               <p className="mt-2 text-sm text-slate-600">Indicatori de performanță și agendă tactică.</p>
             </div>
             <div className="rounded-3xl bg-white p-6 border border-red-100 shadow-sm">
               <p className="text-xs uppercase tracking-[0.24em] text-slate-400">Prioritate</p>
-              <p className="mt-3 text-3xl font-semibold text-slate-950">{activeModule === 'crm' ? 'Fraudă' : activeModule === 'planning' ? 'Rotație' : activeModule === 'warehouse' ? 'Pickup' : activeModule === 'ramp' ? 'Disponibilitate' : 'Reconciliere'}</p>
+              <p className="mt-3 text-3xl font-semibold text-slate-950">{activeModule === 'crm' ? 'Fraudă' : activeModule === 'planning' ? 'Rotație' : activeModule === 'warehouse' ? 'Pickup' : activeModule === 'ramp' ? 'Disponibilitate' : activeModule === 'fleet' ? 'Reconciliere' : activeModule === 'sales' ? 'Oportunități' : activeModule === 'production' ? 'Finalizare' : activeModule === 'logistics' ? 'Livrare' : 'Plan'}</p>
               <p className="mt-2 text-sm text-slate-600">Acțiuni imediate sugerate pentru modul curent.</p>
             </div>
           </div>
@@ -191,13 +220,26 @@ export default function MicroERP() {
           </div>
           <div className="mt-6">
             <Routes>
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/crm" element={<CRM />} />
               <Route path="/crm/quarantine" element={<Quarantine />} />
+              <Route path="/planning" element={<Planning />} />
+              <Route path="/warehouse" element={<Warehouse />} />
               <Route path="/warehouse/picklist" element={<PickList />} />
+              <Route path="/ramp" element={<Ramp />} />
               <Route path="/ramp/slots" element={<Slots />} />
+              <Route path="/fleet" element={<Fleet />} />
               <Route path="/fleet/reconciliation" element={<Reconciliation />} />
+              <Route path="/sales" element={<Sales />} />
+              <Route path="/sales/opportunities" element={<Opportunities />} />
+              <Route path="/production" element={<Production />} />
+              <Route path="/production/batches" element={<Batches />} />
+              <Route path="/logistics" element={<Logistics />} />
+              <Route path="/logistics/incidents" element={<Incidents />} />
               <Route path="/admin" element={<RequireAuth role="admin">{moduleScreens.admin}</RequireAuth>} />
               <Route path="/settings" element={<RequireAuth role="admin">{moduleScreens.settings}</RequireAuth>} />
-              <Route path="*" element={moduleScreens[activeModule]} />
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
             </Routes>
           </div>
         </section>

@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { ShieldAlert, Users2, TrendingUp, Flag, PhoneIncoming } from 'lucide-react';
 import { mockCRM } from '../lib/mockData';
 
@@ -46,7 +47,7 @@ export function CRM() {
           <div className="rounded-3xl bg-red-50 p-4 border border-red-100">
             <p className="font-semibold text-slate-950">Carantină</p>
             <p className="mt-2 text-sm text-slate-600">{mockCRM.quarantine} comenzi în verificare.</p>
-            <button className="mt-4 rounded-2xl bg-red-100 px-4 py-2 text-sm font-semibold text-red-900 hover:bg-red-200">Vezi detalii</button>
+            <Link to="/crm/quarantine" className="mt-4 inline-flex rounded-2xl bg-red-100 px-4 py-2 text-sm font-semibold text-red-900 hover:bg-red-200">Vezi carantină</Link>
           </div>
           <div className="rounded-3xl bg-red-50 p-4 border border-red-100">
             <p className="font-semibold text-slate-950">Call Center</p>
