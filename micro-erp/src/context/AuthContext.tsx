@@ -1,9 +1,22 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import supabase from '../lib/supabaseClient';
 
+interface UserProfile {
+  id: string;
+  email: string;
+  name?: string;
+  role: 'admin' | 'operator' | 'viewer';
+}
+
+interface CompanyProfile {
+  id: string;
+  name: string;
+}
+
 interface AuthContextType {
-  user: any | null;
-  company: any | null;
+  user: UserProfile | null;
+  company: CompanyProfile | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
 }
@@ -11,48 +24,47 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<any | null>(null);
-  const [company, setCompany] = useState<any | null>(null);
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [company, setCompany] = useState<CompanyProfile | null>(null);
 
   useEffect(() => {
-    if (!supabase) return;
+    const client = supabase;
+    if (!client) return;
     let mounted = true;
-    // read current session/user
-    (async () => {
+
+    const loadSession = async () => {
       try {
-        const client = supabase as any;
-        const { data: { user: u } = {} as any } = await client.auth.getUser();
+        const { data } = await client.auth.getSession();
+        const u = data.session?.user ?? null;
         if (u && mounted) {
-          // fetch profile role
-          let profile: any = null;
-          try {
-            const res = await client.from('profiles').select('role').eq('id', u.id).single();
-            profile = res.data;
-          } catch (e) {
-            profile = null;
-          }
-          setUser({ ...u, role: profile?.role || 'operator' });
+          const profile = await fetchProfileRole(u.id, client);
+          setUser({
+            id: u.id,
+            email: u.email ?? '',
+            name: u.user_metadata?.full_name ?? u.email?.split('@')[0] ?? 'User',
+            role: profile,
+          });
           setCompany({ id: 'c1', name: 'Prestige Network SRL' });
         }
       } catch (e) {
-        // ignore
+        console.warn('[AuthContext] could not load session', e);
       }
-    })();
+    };
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_, session) => {
+    loadSession();
+
+    const { data: sub } = client.auth.onAuthStateChange((_, session) => {
       const u = session?.user ?? null;
       if (u && mounted) {
         (async () => {
-          try {
-            const client = supabase as any;
-            const res = await client.from('profiles').select('role').eq('id', u.id).single();
-            const profile = res?.data ?? null;
-            setUser({ ...u, role: profile?.role || 'operator' });
-            setCompany({ id: 'c1', name: 'Prestige Network SRL' });
-          } catch (e) {
-            setUser({ ...u, role: 'operator' });
-            setCompany({ id: 'c1', name: 'Prestige Network SRL' });
-          }
+          const profile = await fetchProfileRole(u.id, client);
+          setUser({
+            id: u.id,
+            email: u.email ?? '',
+            name: u.user_metadata?.full_name ?? u.email?.split('@')[0] ?? 'User',
+            role: profile,
+          });
+          setCompany({ id: 'c1', name: 'Prestige Network SRL' });
         })();
       } else if (!u) {
         setUser(null);
@@ -66,38 +78,53 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  const fetchProfileRole = async (userId: string, client: SupabaseClient) => {
+    try {
+      const res = await client.from('profiles').select('role').eq('id', userId).single();
+      if (res.error) {
+        console.warn('[AuthContext] profile role fetch failed', res.error);
+        return 'operator';
+      }
+      return (res.data?.role as 'admin' | 'operator' | 'viewer') ?? 'operator';
+    } catch (error) {
+      console.warn('[AuthContext] profile role query exception', error);
+      return 'operator';
+    }
+  };
+
   const login = async (email: string, _password: string) => {
     if (!email) throw new Error('Email required');
-    // If supabase client configured, try real sign-in (email OTP or passwordless assumed for demo)
+
     if (supabase) {
       try {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password: _password });
         if (error) throw error;
         const u = data.user;
-        // try to fetch profile role from 'profiles' table
-        let role = 'operator';
-        let profileData: any = null;
-        try {
-          const res = await (supabase as any).from('profiles').select('role').eq('id', u!.id).single();
-          profileData = res?.data ?? null;
-        } catch (e) {
-          profileData = null;
-        }
-        if (profileData) role = profileData.role || role;
-        setUser({ ...u, role });
+        if (!u) throw new Error('No user returned from Supabase');
+
+        const role = await fetchProfileRole(u.id, supabase);
+        setUser({
+          id: u.id,
+          email: u.email ?? '',
+          name: u.user_metadata?.full_name ?? u.email!.split('@')[0] ?? 'User',
+          role,
+        });
         setCompany({ id: 'c1', name: 'Prestige Network SRL' });
         return;
       } catch (err) {
-        // fallback to mock if supabase fails
         console.warn('Supabase login failed, falling back to mock', err);
       }
     }
 
-    const mockUser = { id: 'u1', email, name: email.split('@')[0], role: 'admin' };
-    const mockCompany = { id: 'c1', name: 'Prestige Network SRL' };
+    const isAdmin = email.includes('admin');
+    const mockUser: UserProfile = {
+      id: 'u1',
+      email,
+      name: email.split('@')[0],
+      role: isAdmin ? 'admin' : 'operator',
+    };
     setUser(mockUser);
-    setCompany(mockCompany);
-    return Promise.resolve();
+    setCompany({ id: 'c1', name: 'Prestige Network SRL' });
   };
 
   const logout = () => {
