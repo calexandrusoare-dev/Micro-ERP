@@ -1,5 +1,6 @@
 name = "micro-erp"
 compatibility_date = "2026-06-17"
+main = "./worker.js"
 
 [build]
 command = "cd micro-erp && npm install && npm run build"
