@@ -82,12 +82,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await client.from('profiles').select('role').eq('id', userId).single();
       if (res.error) {
-        console.warn('[AuthContext] profile role fetch failed', res.error);
-        return 'operator';
+        console.warn('[AuthContext] profile role fetch failed from profiles', res.error);
+        const fallback = await fetchUserRoleFallback(userId, client);
+        return fallback;
       }
       return (res.data?.role as 'admin' | 'operator' | 'viewer') ?? 'operator';
     } catch (error) {
       console.warn('[AuthContext] profile role query exception', error);
+      return await fetchUserRoleFallback(userId, client);
+    }
+  };
+
+  const fetchUserRoleFallback = async (userId: string, client: SupabaseClient) => {
+    try {
+      const res = await client.from('user_roles').select('can_edit, can_view, can_delete').eq('id', userId).single();
+      if (res.error || !res.data) {
+        return 'operator';
+      }
+      return res.data.can_edit ? 'admin' : res.data.can_view ? 'operator' : 'viewer';
+    } catch (error) {
+      console.warn('[AuthContext] fallback user_role query exception', error);
       return 'operator';
     }
   };
