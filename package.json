@@ -9,18 +9,20 @@
     "seed": "node scripts/seed.js",
     "seed:supabase": "node scripts/supabase-seed.js",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "npm run build && wrangler dev",
+    "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.108.2",
-    "lucide-react": "^1.18.0",
-    "react-router-dom": "^6.17.0",
     "chart.js": "^4.4.0",
-    "react-chartjs-2": "^5.3.0",
+    "lucide-react": "^1.18.0",
     "react": "^19.2.6",
-    "react-dom": "^19.2.6"
+    "react-chartjs-2": "^5.3.0",
+    "react-dom": "^19.2.6",
+    "react-router-dom": "^6.17.0"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.42.0",
     "@eslint/js": "^10.0.1",
     "@tailwindcss/postcss": "^4.3.1",
     "@types/node": "^24.12.3",
@@ -35,6 +37,7 @@
     "postcss": "^8.5.15",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.59.2",
-    "vite": "^8.0.12"
+    "vite": "^8.0.12",
+    "wrangler": "^4.102.0"
   }
 }
